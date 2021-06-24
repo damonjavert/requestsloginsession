@@ -19,24 +19,26 @@ import requests
 
 class MyLoginSession:
     """
-    https://stackoverflow.com/a/37118451/2115140
-    by https://stackoverflow.com/users/1150303/domtomcat
+    Taken from: https://stackoverflow.com/a/37118451/2115140
+    New features added
+    Originally by: https://stackoverflow.com/users/1150303/domtomcat
 
     a class which handles and saves login sessions. It also keeps track of proxy settings.
-    It does also maintine a cache-file for restoring session data from earlier
+    It does also maintains a cache-file for restoring session data from earlier
     script executions.
     """
+
     def __init__(self,
                  loginUrl,
                  loginData,
                  loginTestUrl,
                  loginTestString,
-                 sessionFileAppendix = '_session.dat',
-                 maxSessionTimeSeconds = 30 * 60,
-                 proxies = None,
-                 userAgent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
-                 debug = True,
-                 forceLogin = False,
+                 sessionFileAppendix='_session.dat',
+                 maxSessionTimeSeconds=30 * 60,
+                 proxies=None,
+                 userAgent='Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
+                 debug=False,
+                 forceLogin=False,
                  **kwargs):
         """
         save some information needed to login the session
@@ -69,7 +71,7 @@ class MyLoginSession:
         t = os.path.getmtime(filename)
         return datetime.datetime.fromtimestamp(t)
 
-    def login(self, forceLogin = False, **kwargs):
+    def login(self, forceLogin=False, **kwargs):
         """
         login to a session. Try to read last saved session from cache file. If this fails
         do proper login. If the last cache access was too old, also perform a proper login.
@@ -79,7 +81,7 @@ class MyLoginSession:
         if self.debug:
             print('loading or generating session...')
         if os.path.exists(self.sessionFile) and not forceLogin:
-            time = self.modification_date(self.sessionFile)         
+            time = self.modification_date(self.sessionFile)
 
             # only load if file less than 30 minutes old
             lastModification = (datetime.datetime.now() - time).seconds
@@ -92,18 +94,19 @@ class MyLoginSession:
                               % lastModification)
         if not wasReadFromCache:
             self.session = requests.Session()
-            self.session.headers.update({'user-agent' : self.userAgent})
-            res = self.session.post(self.loginUrl, data = self.loginData, 
-                                    proxies = self.proxies, **kwargs)
+            self.session.headers.update({'user-agent': self.userAgent})
+            res = self.session.post(self.loginUrl, data=self.loginData,
+                                    proxies=self.proxies, **kwargs)
 
             if self.debug:
-                print('created new session with login' )
+                print('created new session with login')
             self.saveSessionToCache()
 
         # test login
         res = self.session.get(self.loginTestUrl)
-        #print res.text
         if res.text.lower().find(self.loginTestString.lower()) < 0:
+            if self.debug:
+                print(res.text)
             raise Exception("could not log into provided site '%s'"
                             " (did not find successful login string)"
                             % self.loginUrl)
@@ -118,7 +121,7 @@ class MyLoginSession:
             if self.debug:
                 print('updated session cache-file %s' % self.sessionFile)
 
-    def retrieveContent(self, url, method = "get", postData = None, **kwargs):
+    def retrieveContent(self, url, method="get", postData=None, postDataFiles=None, **kwargs):
         """
         return the content of the url with respect to the session.
 
@@ -126,11 +129,11 @@ class MyLoginSession:
         as a post request.
         """
         if method == 'get':
-            res = self.session.get(url , proxies = self.proxies, **kwargs)
+            res = self.session.get(url, proxies=self.proxies, **kwargs)
         else:
-            res = self.session.post(url , data = postData, proxies = self.proxies, **kwargs)
+            res = self.session.post(url, data=postData, proxies=self.proxies, files=postDataFiles, **kwargs)
 
         # the session has been updated on the server, so also update in cache
-        self.saveSessionToCache()            
+        self.saveSessionToCache()
 
         return res

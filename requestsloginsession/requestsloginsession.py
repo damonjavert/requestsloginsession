@@ -35,6 +35,7 @@ class MyLoginSession:
                  loginData,
                  loginTestUrl,
                  loginTestString,
+                 test_login=False,
                  sessionFileAppendix='_session.dat',
                  maxSessionTimeSeconds=30 * 60,
                  proxies=None,
@@ -62,7 +63,7 @@ class MyLoginSession:
         self.userAgent = userAgent
         self.loginTestString = loginTestString
 
-        self.login(forceLogin, **kwargs)
+        self.login(forceLogin, test_login, **kwargs)
 
     def modification_date(self, filename):
         """
@@ -71,14 +72,14 @@ class MyLoginSession:
         t = os.path.getmtime(filename)
         return datetime.datetime.fromtimestamp(t)
 
-    def login(self, forceLogin=False, **kwargs):
+    def login(self, forceLogin=False, test_login=False, **kwargs):
         """
         login to a session. Try to read last saved session from cache file. If this fails
         do proper login. If the last cache access was too old, also perform a proper login.
         Always updates session cache file.
         """
         wasReadFromCache = False
-        logger.debug('loading or generating session...')
+        # logger.debug('loading or generating session...')
         if os.path.exists(self.sessionFile) and not forceLogin:
             time = self.modification_date(self.sessionFile)
 
@@ -88,7 +89,7 @@ class MyLoginSession:
                 with open(self.sessionFile, "rb") as f:
                     self.session = pickle.load(f)
                     wasReadFromCache = True
-                    logger.debug("loaded session from cache (last access %ds ago) " % lastModification)
+                    # logger.debug("loaded session from cache (last access %ds ago) " % lastModification)
         if not wasReadFromCache:
             self.session = requests.Session()
             self.session.headers.update({'user-agent': self.userAgent})
@@ -97,13 +98,15 @@ class MyLoginSession:
             logger.debug('created new session with login')
             self.saveSessionToCache()
 
-        # test login
-        res = self.session.get(self.loginTestUrl)
-        if res.text.lower().find(self.loginTestString.lower()) < 0:
-            logger.debug(res.text)
-            raise Exception("could not log into provided site '%s'"
-                            " (did not find successful login string)"
-                            % self.loginUrl)
+        if test_login:
+            # test login
+            logger.debug('Loaded session from cache and testing login...')
+            res = self.session.get(self.loginTestUrl)
+            if res.text.lower().find(self.loginTestString.lower()) < 0:
+                logger.debug(res.text)
+                raise Exception("could not log into provided site '%s'"
+                                " (did not find successful login string)"
+                                % self.loginUrl)
 
     def saveSessionToCache(self):
         """
@@ -130,3 +133,4 @@ class MyLoginSession:
         self.saveSessionToCache()
 
         return res
+

@@ -31,16 +31,16 @@ class MyLoginSessionTest:
     """
 
     def __init__(self,
-                 loginUrl,
-                 loginData,
-                 loginTestUrl,
-                 loginTestString,
+                 login_url,
+                 login_data,
+                 login_test_url,
+                 login_test_string,
                  test_login=False,
-                 sessionFileAppendix='_session.dat',
-                 maxSessionTimeSeconds=30 * 60,
+                 session_file_appendix='_session.dat',
+                 max_session_time_seconds=30 * 60,
                  proxies=None,
-                 userAgent='Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
-                 forceLogin=False,
+                 user_agent='Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
+                 force_login=False,
                  **kwargs):
         """
         save some information needed to login the session
@@ -52,18 +52,18 @@ class MyLoginSessionTest:
         'loginData' will be sent as post data (dictionary of id : value).
         'maxSessionTimeSeconds' will be used to determine when to re-login.
         """
-        urlData = urlparse(loginUrl)
+        url_data = urlparse(login_url)
 
         self.proxies = proxies
-        self.loginData = loginData
-        self.loginUrl = loginUrl
-        self.loginTestUrl = loginTestUrl
-        self.maxSessionTime = maxSessionTimeSeconds
-        self.sessionFile = urlData.netloc + sessionFileAppendix
-        self.userAgent = userAgent
-        self.loginTestString = loginTestString
+        self.login_data = login_data
+        self.login_url = login_url
+        self.login_test_url = login_test_url
+        self.max_session_time_seconds = max_session_time_seconds
+        self.session_file = url_data.netloc + session_file_appendix
+        self.user_agent = user_agent
+        self.login_test_string = login_test_string
 
-        self.login(forceLogin, test_login, **kwargs)
+        self.login(force_login, test_login, **kwargs)
 
     def modification_date(self, filename):
         """
@@ -80,41 +80,41 @@ class MyLoginSessionTest:
         """
         read_from_cache = False
         # logger.debug('loading or generating session...')
-        if os.path.exists(self.sessionFile) and not force_login:
-            time = self.modification_date(self.sessionFile)
+        if os.path.exists(self.session_file) and not force_login:
+            time = self.modification_date(self.session_file)
 
             # only load if file less than maxSessionTimeSeconds old
             last_modification = (datetime.datetime.now() - time).seconds
-            if last_modification < self.maxSessionTime:
-                with open(self.sessionFile, "rb") as f:
+            if last_modification < self.max_session_time_seconds:
+                with open(self.session_file, "rb") as f:
                     self.session = pickle.load(f)
                     read_from_cache = True
                     # logger.debug("loaded session from cache (last access %ds ago) " % last_modification)
         if not read_from_cache:
             self.session = requests.Session()
-            self.session.headers.update({'user-agent': self.userAgent})
-            res = self.session.post(self.loginUrl, data=self.loginData,
+            self.session.headers.update({'user-agent': self.user_agent})
+            res = self.session.post(self.login_url, data=self.login_data,
                                     proxies=self.proxies, **kwargs)
             logger.debug('created new session with login')
             self.save_session_to_cache()
 
         if test_login:
             logger.debug('Loaded session from cache and testing login...')
-            res = self.session.get(self.loginTestUrl)
-            if self.loginTestString.lower() not in res.text.lower():
-                os.remove(self.sessionFile)  # Delete the session file if login fails
-                raise Exception(f"Could not log into provided site - {self.loginUrl} - successful login string not found")
+            res = self.session.get(self.login_test_url)
+            if self.login_test_string.lower() not in res.text.lower():
+                os.remove(self.session_file)  # Delete the session file if login fails
+                raise Exception(f"Could not log into provided site - {self.login_url} - successful login string not found")
             if 'Your username or password was incorrect.' in res.text:
-                raise Exception(f"Could not log into provided site {self.loginUrl}  - username or password was incorrect")
+                raise Exception(f"Could not log into provided site {self.login_url}  - username or password was incorrect")
 
     def save_session_to_cache(self):
         """
         save session to a cache file
         """
         # always save (to update timeout)
-        with open(self.sessionFile, "wb") as f:
+        with open(self.session_file, "wb") as f:
             pickle.dump(self.session, f)
-            logger.debug('updated session cache-file %s' % self.sessionFile)
+            logger.debug('updated session cache-file %s' % self.session_file)
 
     def retrieve_content(self, url, method="get", post_data=None, post_data_files=None, **kwargs):
         """

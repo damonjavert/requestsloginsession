@@ -2,7 +2,7 @@ import logging
 import pickle
 import datetime
 import os
-from urlparse import urlparse
+from urllib.parse import urlparse
 import requests
 
 logger = logging.getLogger('main.' + __name__)
@@ -19,7 +19,7 @@ logger = logging.getLogger('main.' + __name__)
 # print(resource.text)
 
 
-class MyLoginSession:
+class MyLoginSessionTest:
     """
     Taken from: https://stackoverflow.com/a/37118451/2115140
     New features added
@@ -95,25 +95,18 @@ class MyLoginSession:
             self.session.headers.update({'user-agent': self.userAgent})
             res = self.session.post(self.loginUrl, data=self.loginData,
                                     proxies=self.proxies, **kwargs)
-
-            if 'Your username or password was incorrect.' in res.text: # check if login was sucessful
-                raise Exception("could not log into provided site '%s'"
-                                " (username or password was incorrect)"
-                                % self.loginUrl)
-
             logger.debug('created new session with login')
             self.saveSessionToCache()
 
         if test_login:
-            # test login
             logger.debug('Loaded session from cache and testing login...')
             res = self.session.get(self.loginTestUrl)
-            if res.text.lower().find(self.loginTestString.lower()) < 0:
-                os.remove(self.sessionFile) # delete the session file if login fails
-                logger.debug(res.text)
-                raise Exception("could not log into provided site '%s'"
-                                " (did not find successful login string)"
-                                % self.loginUrl)
+            if self.loginTestString.lower() not in res.text.lower():
+                os.remove(self.sessionFile)  # Delete the session file if login fails
+                raise Exception(f"Could not log into provided site - {self.loginUrl} - successful login string not found")
+            if 'Your username or password was incorrect.' in res.text:
+                raise Exception(f"Could not log into provided site {self.loginUrl}  - username or password was incorrect")
+
 
     def saveSessionToCache(self):
         """

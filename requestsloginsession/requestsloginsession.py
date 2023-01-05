@@ -9,10 +9,10 @@ logger = logging.getLogger('main.' + __name__)
 
 # Example usage
 #
-# loginUrl = "https://website.com/login.php"
-# loginTestUrl = "https://website.com"
-# successStr = "Latest dig pics..."
-# loginData = {'username' : 'userstr', 'password' : 'passstr' }
+# login_url = "https://website.com/login.php"
+# login_test_url = "https://website.com"
+# login_test_string = "Latest dig pics..."
+# login_data = {'username' : 'userstr', 'password' : 'passstr' }
 #
 # mywebsitesession = MyLoginSession(loginUrl, loginData, loginTestUrl, successStr)
 # resource = mywebsitesession.retrieve_content("https://website.com/cutedogpics")
@@ -21,36 +21,38 @@ logger = logging.getLogger('main.' + __name__)
 
 class MyLoginSessionTest:
     """
-    Taken from: https://stackoverflow.com/a/37118451/2115140
-    New features added
-    Originally by: https://stackoverflow.com/users/1150303/domtomcat
+    A wrapper for requests.Session() that saves the data locally via pickle to allow session information
+    to be recalled on subsequent script runs without needing to relogin.
 
-    a class which handles and saves login sessions. It also keeps track of proxy settings.
-    It does also maintains a cache-file for restoring session data from earlier
-    script executions.
+    Originally based on: https://stackoverflow.com/a/37118451/2115140
+    Originally by: https://stackoverflow.com/users/1150303/domtomcat
     """
 
     def __init__(self,
-                 login_url,
-                 login_data,
-                 login_test_url,
-                 login_test_string,
-                 test_login=False,
-                 session_file_appendix='_session.dat',
-                 max_session_time_seconds=30 * 60,
-                 proxies=None,
-                 user_agent='Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
-                 force_login=False,
-                 **kwargs):
+                 login_url: str,
+                 login_data: dict,
+                 login_test_url: str,
+                 login_test_string: str,
+                 test_login: bool = False,
+                 session_file_appendix: str = '_session.dat',
+                 max_session_time_seconds: int = 30 * 60,
+                 proxies: dict = None,
+                 user_agent: str = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
+                 force_login: bool = False,
+                 **kwargs) -> None:
         """
-        save some information needed to login the session
+        Create or use an existing login session
 
-        you'll have to provide 'loginTestString' which will be looked for in the
-        responses html to make sure, you've properly been logged in
-
-        'proxies' is of format { 'https' : 'https://user:pass@server:port', 'http' : ...
-        'loginData' will be sent as post data (dictionary of id : value).
-        'maxSessionTimeSeconds' will be used to determine when to re-login.
+        :param login_url: URL used to login to the site to setup the session
+        :param login_data: Credentials to access the URL in the format of: {'username' : 'userstr', 'password' : 'passstr' }
+        :param login_test_url: URL used to test that the login has succeeded
+        :param login_test_string: String to search for in the output of login_test_url to ascertain if the login as succeeded
+        :param test_login: Perform a login test with login_test_url and login_test_string
+        :param session_file_appendix: Specify a custom name to store session information
+        :param max_session_time_seconds: Create a new requests.Session() and do not use the session_file after this time
+        :param proxies: Use an http or https proxy for all traffic in the format of: { 'https' : 'https://user:pass@server:port', 'http' : '...' }
+        :param user_agent: Specify the user agent request header to be used for all requests.
+        :param force_login: Create a new requests.Session() and do not check for a session_file to use
         """
         url_data = urlparse(login_url)
 
@@ -65,21 +67,20 @@ class MyLoginSessionTest:
 
         self.login(force_login, test_login, **kwargs)
 
-    def modification_date(self, filename):
+    def modification_date(self, filename: str) -> datetime:
         """
         return last file modification date as datetime object
         """
         t = os.path.getmtime(filename)
         return datetime.datetime.fromtimestamp(t)
 
-    def login(self, force_login=False, test_login=False, **kwargs):
+    def login(self, force_login=False, test_login=False, **kwargs) -> None:
         """
         login to a session. Try to read last saved session from cache file. If this fails
         do proper login. If the last cache access was too old, also perform a proper login.
         Always updates session cache file.
         """
         read_from_cache = False
-        # logger.debug('loading or generating session...')
         if os.path.exists(self.session_file) and not force_login:
             time = self.modification_date(self.session_file)
 
@@ -89,13 +90,12 @@ class MyLoginSessionTest:
                 with open(self.session_file, "rb") as f:
                     self.session = pickle.load(f)
                     read_from_cache = True
-                    # logger.debug("loaded session from cache (last access %ds ago) " % last_modification)
         if not read_from_cache:
             self.session = requests.Session()
             self.session.headers.update({'user-agent': self.user_agent})
             res = self.session.post(self.login_url, data=self.login_data,
                                     proxies=self.proxies, **kwargs)
-            logger.debug('created new session with login')
+            logger.debug('Created new session with login')
             self.save_session_to_cache()
 
         if test_login:
@@ -105,9 +105,9 @@ class MyLoginSessionTest:
                 os.remove(self.session_file)  # Delete the session file if login fails
                 raise Exception(f"Could not log into provided site - {self.login_url} - successful login string not found")
             if 'Your username or password was incorrect.' in res.text:
-                raise Exception(f"Could not log into provided site {self.login_url}  - username or password was incorrect")
+                raise Exception(f"Could not log into provided site {self.login_url} - username or password was incorrect")
 
-    def save_session_to_cache(self):
+    def save_session_to_cache(self) -> None:
         """
         save session to a cache file
         """
@@ -116,7 +116,7 @@ class MyLoginSessionTest:
             pickle.dump(self.session, f)
             logger.debug('updated session cache-file %s' % self.session_file)
 
-    def retrieve_content(self, url, method="get", post_data=None, post_data_files=None, **kwargs):
+    def retrieve_content(self, url: str, method: str = "get", post_data=None, post_data_files=None, **kwargs) -> callable(requests.Session()):
         """
         return the content of the url with respect to the session.
 

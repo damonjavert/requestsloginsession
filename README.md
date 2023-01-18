@@ -1,5 +1,7 @@
 # requestsloginsession
 
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+
 `requestsloginsession` is a simple wrapper for `requests.Session()` that saves the data locally via pickle to allow session information to be recalled on subsequent script runs without needing to relogin. All the attributes from `requests` are available.
 
 ## Example usage
@@ -27,3 +29,4 @@ httpbingo.org_session.dat: data
 >>> r.text
 '{\n  "k1": "v1234",\n  "k2": "v5678"\n}\n'
 ```
+

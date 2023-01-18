@@ -14,12 +14,12 @@ logger = logging.getLogger('main.' + __name__)
 # login_test_string = "Latest dig pics..."
 # login_data = {'username' : 'userstr', 'password' : 'passstr' }
 #
-# mywebsitesession = MyLoginSession(loginUrl, loginData, loginTestUrl, successStr)
+# mywebsitesession = RequestsLoginSession(loginUrl, loginData, loginTestUrl, successStr)
 # resource = mywebsitesession.retrieve_content("https://website.com/cutedogpics")
 # print(resource.text)
 
 
-class MyLoginSessionTest:
+class RequestsLoginSession:
     """
     A wrapper for requests.Session() that saves the data locally via pickle to allow session information
     to be recalled on subsequent script runs without needing to relogin.

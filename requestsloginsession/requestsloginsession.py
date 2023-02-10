@@ -64,11 +64,12 @@ class RequestsLoginSession:
         self.user_agent = user_agent
         self.login_test_string = login_test_string
         self.force_login = force_login
-        self.test_login = test_login
 
         self.session = None
 
         self.login()
+        if test_login:
+            self.test_login()
 
     def modification_date(self, filename: str) -> datetime:
         """
@@ -89,14 +90,18 @@ class RequestsLoginSession:
         else:
             self.session = self.create_new_session()
 
-        if self.test_login:
-            logger.debug('Loaded session from cache and testing login...')
-            res = self.session.get(self.login_test_url)
-            if self.login_test_string.lower() not in res.text.lower():
-                os.remove(self.session_file)  # Delete the session file if login fails
-                raise Exception(f"Could not log into provided site - {self.login_url} - successful login string not found")
-            if 'Your username or password was incorrect.' in res.text:
-                raise Exception(f"Could not log into provided site {self.login_url} - username or password was incorrect")
+    def test_login(self) -> None:
+        """
+        Test the login by navigating to a specific login_test_url and searching for the str login_test_string
+        """
+        logger.debug('Loaded session from cache and testing login...')
+        resource = self.session.get(self.login_test_url)
+
+        if self.login_test_string.lower() not in resource.text.lower():
+            os.remove(self.session_file)  # Delete the session file if login fails
+            raise Exception(f"Could not log into provided site - {self.login_url} - successful login string not found")
+        if 'Your username or password was incorrect.' in resource.text:
+            raise Exception(f"Could not log into provided site {self.login_url} - username or password was incorrect")
 
     def determine_use_cache(self) -> bool:
         """
@@ -136,8 +141,8 @@ class RequestsLoginSession:
 
     def create_new_session(self) -> callable(requests.Session()):
         """
-        Create a new requests.Session()
-        :return:
+        Create a new requests.Session() and add user_agent header
+        :return: requests.Session()
         """
         _session = requests.Session()
         _session.headers.update({'user-agent': self.user_agent})
@@ -163,4 +168,3 @@ class RequestsLoginSession:
         self.save_session_to_cache()
 
         return res
-

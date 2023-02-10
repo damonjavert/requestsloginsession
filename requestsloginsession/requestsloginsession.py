@@ -38,8 +38,7 @@ class RequestsLoginSession:
                  max_session_time_seconds: int = 30 * 60,
                  proxies: dict = None,
                  user_agent: str = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.1',
-                 force_login: bool = False,
-                 **kwargs) -> None:
+                 force_login: bool = False) -> None:
         """
         Create or use an existing login session
 
@@ -64,8 +63,12 @@ class RequestsLoginSession:
         self.session_file = url_data.netloc + session_file_appendix
         self.user_agent = user_agent
         self.login_test_string = login_test_string
+        self.force_login = force_login
+        self.test_login = test_login
 
-        self.login(force_login, test_login, **kwargs)
+        self.session = None
+
+        self.login()
 
     def modification_date(self, filename: str) -> datetime:
         """
@@ -74,31 +77,19 @@ class RequestsLoginSession:
         t = os.path.getmtime(filename)
         return datetime.datetime.fromtimestamp(t)
 
-    def login(self, force_login=False, test_login=False, **kwargs) -> None:
+    def login(self) -> None:
         """
         login to a session. Try to read last saved session from cache file. If this fails
         do proper login. If the last cache access was too old, also perform a proper login.
         Always updates session cache file.
         """
-        read_from_cache = False
-        if os.path.exists(self.session_file) and not force_login:
-            time = self.modification_date(self.session_file)
 
-            # only load if file less than maxSessionTimeSeconds old
-            last_modification = (datetime.datetime.now() - time).seconds
-            if last_modification < self.max_session_time_seconds:
-                with open(self.session_file, "rb") as f:
-                    self.session = pickle.load(f)
-                    read_from_cache = True
-        if not read_from_cache:
-            self.session = requests.Session()
-            self.session.headers.update({'user-agent': self.user_agent})
-            res = self.session.post(self.login_url, data=self.login_data,
-                                    proxies=self.proxies, **kwargs)
-            logger.debug('Created new session with login')
-            self.save_session_to_cache()
+        if self.determine_use_cache():
+            self.session = self.load_session_from_cache()
+        else:
+            self.session = self.create_new_session()
 
-        if test_login:
+        if self.test_login:
             logger.debug('Loaded session from cache and testing login...')
             res = self.session.get(self.login_test_url)
             if self.login_test_string.lower() not in res.text.lower():
@@ -107,14 +98,54 @@ class RequestsLoginSession:
             if 'Your username or password was incorrect.' in res.text:
                 raise Exception(f"Could not log into provided site {self.login_url} - username or password was incorrect")
 
+    def determine_use_cache(self) -> bool:
+        """
+        Determine if the cache file self.session_file should be used
+
+        :param: bool: true if to always login regardless of the age of the self.session_file
+        :return: bool: True if it should be used, false otherwise
+        """
+        if self.force_login:
+            return True
+
+        if not os.path.exists(self.session_file):
+            return False
+
+        session_file_mod_time = self.modification_date(self.session_file)
+        last_modification = (datetime.datetime.now() - session_file_mod_time).seconds
+
+        if last_modification < self.max_session_time_seconds:
+            return True
+
     def save_session_to_cache(self) -> None:
         """
-        save session to a cache file
+        Save session to a cache file self.session_file
         """
         # always save (to update timeout)
         with open(self.session_file, "wb") as f:
             pickle.dump(self.session, f)
             logger.debug('updated session cache-file %s' % self.session_file)
+
+    def load_session_from_cache(self) -> pickle:
+        """
+        Load session into from the cache file
+        :return: pickle: cache data from self.session_file
+        """
+        with open(self.session_file, "rb") as f:
+            return pickle.load(f)
+
+    def create_new_session(self) -> callable(requests.Session()):
+        """
+        Create a new requests.Session()
+        :return:
+        """
+        _session = requests.Session()
+        _session.headers.update({'user-agent': self.user_agent})
+        _session.post(self.login_url, data=self.login_data, proxies=self.proxies)
+        logger.debug('Created new session with login')
+        self.save_session_to_cache()
+
+        return _session
 
     def retrieve_content(self, url: str, method: str = "get", post_data=None, post_data_files=None, **kwargs) -> callable(requests.Session()):
         """

@@ -1,3 +1,8 @@
+"""
+requestsloginsession is a simple wrapper for requests.Session() that savesthe data locally via pickle
+to allow session information to be recalled on subsequent script runs without needing to relogin.
+All the attributes from requests are available.
+"""
 import logging
 import pickle
 import datetime
@@ -75,8 +80,8 @@ class RequestsLoginSession:
         """
         return last file modification date as datetime object
         """
-        t = os.path.getmtime(filename)
-        return datetime.datetime.fromtimestamp(t)
+        file_mtime = os.path.getmtime(filename)
+        return datetime.datetime.fromtimestamp(file_mtime)
 
     def login(self) -> None:
         """
@@ -99,9 +104,9 @@ class RequestsLoginSession:
 
         if self.login_test_string.lower() not in resource.text.lower():
             os.remove(self.session_file)  # Delete the session file if login fails
-            raise Exception(f"Could not log into provided site - {self.login_url} - successful login string not found")
+            raise RuntimeError(f"Could not log into provided site - {self.login_url} - successful login string not found")
         if 'Your username or password was incorrect.' in resource.text:
-            raise Exception(f"Could not log into provided site {self.login_url} - username or password was incorrect")
+            raise RuntimeError(f"Could not log into provided site {self.login_url} - username or password was incorrect")
 
     def determine_use_cache(self) -> bool:
         """
@@ -126,18 +131,19 @@ class RequestsLoginSession:
         """
         Save session to a cache file self.session_file
         """
+        session_file = self.session_file
         # always save (to update timeout)
-        with open(self.session_file, "wb") as f:
-            pickle.dump(self.session, f)
-            logger.debug('updated session cache-file %s' % self.session_file)
+        with open(session_file, "wb") as session_file_object:
+            pickle.dump(self.session, session_file_object)
+            logger.debug('updated session cache-file %s', session_file)
 
     def load_session_from_cache(self) -> pickle:
         """
         Load session into from the cache file
         :return: pickle: cache data from self.session_file
         """
-        with open(self.session_file, "rb") as f:
-            return pickle.load(f)
+        with open(self.session_file, "rb") as session_file_object:
+            return pickle.load(session_file_object)
 
     def create_new_session(self) -> callable(requests.Session()):
         """

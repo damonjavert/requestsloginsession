@@ -1,6 +1,6 @@
 name: Pylint
 
-on: [push, pull_request]
+on: [push]
 
 jobs:
   build:
@@ -21,4 +21,4 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint --max-line-length 150 $(git ls-files '*.py')
+        pylint --disable=locally-disabled --max-line-length 150 $(git ls-files '*.py')

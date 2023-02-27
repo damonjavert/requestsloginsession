@@ -123,7 +123,7 @@ class RequestsLoginSession:
         :return: bool: True if it should be used, false otherwise
         """
         if self.force_login:
-            return True
+            return False
 
         if not os.path.exists(self.session_file):
             return False

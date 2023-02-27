@@ -32,8 +32,15 @@ class RequestsLoginSession:
     Originally based on: https://stackoverflow.com/a/37118451/2115140
     Originally by: https://stackoverflow.com/users/1150303/domtomcat
     """
+    # pylint: disable=too-many-instance-attributes
+    # Explicit is always better than implicit. Although listing all the parameters in the __init__ method head may look cumbersome,
+    # we are explicit about what parameters the users need to specify when they create instance objects.
+    # https://betterprogramming.pub/6-best-practices-for-defining-the-initialization-method-in-python-9173808bfb8f"
 
     def __init__(self,
+                 # pylint: disable=too-many-arguments
+                 # The class requires all these options and as it is called by other external modules the functionality
+                 # cannot be refactored to reduce them.
                  login_url: str,
                  login_data: dict,
                  login_test_url: str = None,
@@ -126,6 +133,8 @@ class RequestsLoginSession:
 
         if last_modification < self.max_session_time_seconds:
             return True
+
+        return False
 
     def save_session_to_cache(self) -> None:
         """

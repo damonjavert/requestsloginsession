@@ -29,8 +29,8 @@ python setup.py install
 
 ```python
 >>> from requestsloginsession import RequestsLoginSession
->>> login_url = "http://httpbingo.org/basic-auth/user123/passwd123"
->>> login_data = {'username' : 'user123', 'password' : 'passwd123' }
+>>> login_url = "http://httpbingo.org/"
+>>> login_data = { 'username' : 'example', 'password' : 'example' }
 >>> mysession = RequestsLoginSession(login_url, login_data)
 >>> r = mysession.retrieve_content("http://httpbingo.org/cookies/set?k1=v1234&k2=v5678")
 >>>
@@ -41,8 +41,8 @@ httpbingo.org_session.dat: data
  $ python3
 
 >>> from requestsloginsession import RequestsLoginSession
->>> login_url = "http://httpbingo.org/basic-auth/user123/passwd123"
->>> login_data = {'username' : 'user123', 'password' : 'passwd123' }
+>>> login_url = "http://httpbingo.org/"
+>>> login_data = { 'username' : 'example', 'password' : 'example' }
 >>> mysession = RequestsLoginSession(login_url, login_data)
 >>> r = mysession.retrieve_content("http://httpbingo.org/cookies")
 >>> r.json()

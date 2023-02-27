@@ -25,3 +25,12 @@ jobs:
         pylint --disable=locally-disabled --max-line-length 150 $(git ls-files '*.py')
     - name: Run pytest
       run: pytest
+    - name: publish code coverage to code-climate
+      uses: paambaati/codeclimate-action@v2.7.1
+      env:
+        CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+      with:
+        coverageCommand: coverage run -m pytest
+        coverageLocations: |
+          ${{github.workspace}}/coverage.lcov:lcov
+        debug: true

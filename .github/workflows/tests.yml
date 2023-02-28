@@ -32,7 +32,7 @@ jobs:
     steps:
     - uses: paambaati/codeclimate-action@v2.7.1
       env:
-        CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+        CC_TEST_REPORTER_ID: eee088f724d03705460677092e8253d67eddddb7dd078848d049645c6c9405f1
       with:
         coverageCommand: coverage run -m pytest
         coverageLocations: |

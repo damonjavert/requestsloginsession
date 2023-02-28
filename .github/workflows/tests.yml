@@ -49,5 +49,7 @@ jobs:
         ./cc-test-reporter before-build
         coverage run -m pytest
         coverage lcov
+        mkdir coverage
+        mv coverage.lcov coverage/lcov.info
         ./cc-test-reporter after-build --coverage-input-type lcov --exit-code $?
 

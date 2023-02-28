@@ -3,7 +3,7 @@ name: Tests
 on: [push]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -25,8 +25,12 @@ jobs:
         pylint --disable=locally-disabled --max-line-length 150 $(git ls-files '*.py')
     - name: Run pytest
       run: pytest
-    - name: publish code coverage to code-climate
-      uses: paambaati/codeclimate-action@v2.7.1
+  coverage:
+    needs: [ test ]
+    name: coverage
+    runs-on: ubuntu-latest
+    steps:
+    - uses: paambaati/codeclimate-action@v2.7.1
       env:
         CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
       with:

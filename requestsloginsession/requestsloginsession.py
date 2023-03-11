@@ -1,28 +1,20 @@
 """
-requestsloginsession is a simple wrapper for requests.Session() that savesthe data locally via pickle
-to allow session information to be recalled on subsequent script runs without needing to relogin.
+requestsloginsession is a simple wrapper for requests.Session() that saves the data locally via pickle
+to allow session information to be recalled on subsequent script runs without needing to re-login.
 All the attributes from requests are available.
 """
+# Standard library packages
 import logging
 import pickle
 import datetime
 import os
 from urllib.parse import urlparse
+from pathlib import Path
+
+# Third-party packages
 import requests
 
 logger = logging.getLogger('main.' + __name__)
-
-# Example usage
-#
-# login_url = "https://website.com/login.php"
-# login_test_url = "https://website.com"
-# login_test_string = "Latest dig pics..."
-# login_data = {'username' : 'userstr', 'password' : 'passstr' }
-#
-# mywebsitesession = RequestsLoginSession(loginUrl, loginData, loginTestUrl, successStr)
-# resource = mywebsitesession.retrieve_content("https://website.com/cutedogpics")
-# print(resource.text)
-
 
 class RequestsLoginSession:
     """
@@ -72,7 +64,7 @@ class RequestsLoginSession:
         self.login_url = login_url
         self.login_test_url = login_test_url
         self.max_session_time_seconds = max_session_time_seconds
-        self.session_file = url_data.netloc + session_file_appendix
+        self.session_file = Path(Path.home(), url_data.netloc + session_file_appendix)
         self.user_agent = user_agent
         self.login_test_string = login_test_string
         self.force_login = force_login
@@ -141,8 +133,20 @@ class RequestsLoginSession:
         Save session to a cache file self.session_file
         """
         session_file = self.session_file
-        # always save (to update timeout)
-        with open(session_file, "wb") as session_file_object:
+
+        # Save session file as 600
+        os.umask(0)
+        descriptor = os.open(
+            path=session_file,
+            flags=(
+                    os.O_WRONLY  # access mode: write only
+                    | os.O_CREAT  # create if not exists
+                    | os.O_TRUNC  # truncate the file to zero
+            ),
+            mode=0o600
+        )
+
+        with open(descriptor, "wb") as session_file_object:
             pickle.dump(self.session, session_file_object)
             logger.debug('updated session cache-file %s', session_file)
 
